@@ -1,16 +1,10 @@
 {
   "name": "my-line-bot",
   "version": "1.0.0",
-  "main": "index.js",
-"scripts": {
-  "start": "node index.js",
-  "test": "echo \"Error: no test specified\" && exit 1"
-}
-,
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "description": "",
+  "main": "src/index.js",  // ここを変更
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
   "dependencies": {
     "@line/bot-sdk": "^9.4.1",
     "axios": "^1.7.7",

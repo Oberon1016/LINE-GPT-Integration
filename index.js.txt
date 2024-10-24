@@ -1,49 +1,36 @@
-require('dotenv').config();
 const express = require('express');
 const bodyParser = require('body-parser');
 const line = require('@line/bot-sdk');
-const axios = require('axios');
+require('dotenv').config();
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+const port = process.env.PORT || 3000;
 
-const lineConfig = {
-    channelAccessToken: process.env.LINE_CHANNEL_ACCESS_TOKEN,
-    channelSecret: process.env.LINE_CHANNEL_SECRET,
+const config = {
+  channelAccessToken: process.env.LINE_CHANNEL_ACCESS_TOKEN,
+  channelSecret: process.env.LINE_CHANNEL_SECRET,
 };
 
-const client = new line.Client(lineConfig);
+const client = new line.Client(config);
 
-app.use(bodyParser.json());
-
-app.post('/webhook', line.middleware(lineConfig), async (req, res) => {
-    const events = req.body.events;
-    for (const event of events) {
-        if (event.type === 'message' && event.message.type === 'text') {
-            const userMessage = event.message.text;
-            const replyToken = event.replyToken;
-
-            // GPTにリクエストを送信
-            const gptResponse = await getGPTResponse(userMessage);
-            await client.replyMessage(replyToken, { type: 'text', text: gptResponse });
-        }
-    }
-    res.sendStatus(200);
+app.post('/webhook', line.middleware(config), (req, res) => {
+  Promise.all(req.body.events.map(handleEvent))
+    .then((result) => res.json(result))
+    .catch((err) => {
+      console.error(err);
+      res.status(500).end();
+    });
 });
 
-async function getGPTResponse(message) {
-    const response = await axios.post('https://api.openai.com/v1/chat/completions', {
-        model: 'gpt-3.5-turbo', // 使用するモデル名
-        messages: [{ role: 'user', content: message }],
-    }, {
-        headers: {
-            'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
-            'Content-Type': 'application/json',
-        },
-    });
-    return response.data.choices[0].message.content;
+function handleEvent(event) {
+  if (event.type !== 'message' || event.message.type !== 'text') {
+    return Promise.resolve(null);
+  }
+
+  const echo = { type: 'text', text: event.message.text };
+  return client.replyMessage(event.replyToken, echo);
 }
 
-app.listen(PORT, () => {
-    console.log(`Server is running on port ${PORT}`);
+app.listen(port, () => {
+  console.log(`Server is running on port ${port}`);
 });
